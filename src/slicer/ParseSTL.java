@@ -67,7 +67,7 @@ public class ParseSTL extends JPanel {
 
     public static List<Triangle> readSTL(List<Triangle> faceList) {
         try {
-            Scanner scanner = new Scanner(new File("/Users/gustavoestermarker/IdeaProjects/Slicer/Body3.stl"));
+            Scanner scanner = new Scanner(new File("/Users/gustavoestermarker/IdeaProjects/Slicer/testSTL.stl"));
             while (scanner.hasNextLine()) {
                 Point3d[] points = new Point3d[3];
                 if (scanner.nextLine().contains("outer")) { // 3 vertex lines follow "outer loop" line
@@ -105,7 +105,7 @@ public class ParseSTL extends JPanel {
      */
 
     public static void findIntersections(List<Triangle> list) {
-        double current_Z_height = 15;
+        double current_Z_height = 2.5;
         double temp_Z_height;
         int index = 0;
         int startIndex = 0;
@@ -120,7 +120,9 @@ public class ParseSTL extends JPanel {
                     //startIndex = i;
                     break;
                 }
-                twoLines(list.get(i).A, list.get(i).B, list.get(i).C, current_Z_height);
+                if (list.get(i).Z_max > current_Z_height) {
+                    twoLines(list.get(i).A, list.get(i).B, list.get(i).C, current_Z_height);
+                }
             }
 
             break;
@@ -177,7 +179,7 @@ public class ParseSTL extends JPanel {
         }
 
         for (Point3d p : intersection_list) {
-            g.drawLine((int)(p.getX() * 10) + 10, (int)(p.getY() * 10) + 10, (int)(p.getX() * 10) + 10, (int)(p.getY() * 10) + 10);
+            g.drawLine((int)(p.getX() * 10) , (int)(p.getY() * 10) , (int)(p.getX() * 10) , (int)(p.getY() * 10) );
         }
 
     }
