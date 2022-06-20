@@ -8,10 +8,8 @@ import java.util.*;
 import java.util.List;
 
 /*
-    this class reads in data i
-
-    take the list of 3d face plane. for each plane, calculate the intersection
-    points for all possible layer heights in that face. ie. if Z_min is
+    This file is responsible for all parsing and calculations that are necessary
+    for path finding algorithms and such.
  */
 
 /* ascii STL code format
@@ -24,15 +22,16 @@ import java.util.List;
    end facet
  */
 
-// hashmap(key, <point 1, point2>)
 
 public class ParseSTL extends JPanel {
 
     //    static Map<Double, List<Point3d>> map = new HashMap<Double, List<Point3d>>();
     static Map<Double, Point3d> map = new HashMap<Double, Point3d>(); // currently not used
     static List<Point3d> intersection_list = new ArrayList<Point3d>();
+    static List<Point3d> intersections_cross = new ArrayList<Point3d>(); // cross section intersection points
 
     static double LAYER_HEIGHT = 0.2;
+    static double Y_MIN = 100000, Y_MAX = -100000; // the max and min Y value for all intersection points
 
     public static void main(String[] args) {
         List<Triangle> list = new ArrayList<Triangle>();
@@ -41,28 +40,30 @@ public class ParseSTL extends JPanel {
 
         Collections.sort(list);
         findIntersections(list);
+        crossSectionIntersections(intersection_list);
 
-
+        ParseSTL panel = new ParseSTL();
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Draw Points");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBackground(Color.white);
         frame.setSize(1000, 1000);
-
-        ParseSTL panel = new ParseSTL();
-
         frame.add(panel);
-
         frame.setVisible(true);
 
+        System.out.println("Y_MIN = " + Y_MIN);
+        System.out.println("Total lines: " + intersection_list.size() / 2);
+        System.out.println("Y_MAX = " + Y_MAX);
+//        for (Point3d p : intersection_list) {
+//            System.out.println(p.getX() + ", " + p.getY());
+//        }
+//        for (Point3d p : intersection_list) {
+//            System.out.println("x: " + p.getX() + ", y: " + p.getY() + ", z: " + p.getZ());
+//        }
 
-        for (Point3d p : intersection_list) {
-            System.out.println("x: " + p.getX() + ", y: " + p.getY() + ", z: " + p.getZ());
-        }
-
-        for (Triangle l : list) {
-            System.out.println("(" + l.A.getX() + ", " + l.A.getY() + ", " + l.A.getZ() + ")" + ", (" + l.B.getX() + ", " + l.B.getY() + ", " + l.B.getZ() + ")" + ", (" + l.C.getX() + ", " + l.C.getY() + ", " + l.C.getZ() + ")");
-        }
+//        for (Triangle l : list) {
+//            System.out.println("(" + l.A.getX() + ", " + l.A.getY() + ", " + l.A.getZ() + ")" + ", (" + l.B.getX() + ", " + l.B.getY() + ", " + l.B.getZ() + ")" + ", (" + l.C.getX() + ", " + l.C.getY() + ", " + l.C.getZ() + ")");
+//        }
     }
 
     public static List<Triangle> readSTL(List<Triangle> faceList) {
@@ -99,13 +100,10 @@ public class ParseSTL extends JPanel {
             intersection(AB, AC)
     else
         intersection(AC, BC)
-
-
-    if !(new Hashmap(key,
      */
 
     public static void findIntersections(List<Triangle> list) {
-        double current_Z_height = 2.5;
+        double current_Z_height = 5;
         double temp_Z_height;
         int index = 0;
         int startIndex = 0;
@@ -115,16 +113,19 @@ public class ParseSTL extends JPanel {
         // NOTE: increase efficiency of the for loop. it's not perfect, repeats and such
         while (true) {
             // go through all faces at that Z height
-            for (i = 0; i < list.size() - 1; i++) {
+            for (i = startIndex; i < list.size() - 1; i++) {
                 if (list.get(i).Z_min > current_Z_height) {
-                    //startIndex = i;
+                    startIndex = i;
                     break;
                 }
                 if (list.get(i).Z_max > current_Z_height) {
                     twoLines(list.get(i).A, list.get(i).B, list.get(i).C, current_Z_height);
                 }
             }
-
+            //current_Z_height += LAYER_HEIGHT;
+            if (current_Z_height > 100) {
+                break;
+            }
             break;
         }
     }
@@ -161,6 +162,7 @@ public class ParseSTL extends JPanel {
             return;
         }
 
+        // the intersection point
         double t = -(pz + layerHeight) / tDenom;
         double x = (px + t * (qx - px));
         double y = (py + t * (qy - py));
@@ -168,19 +170,63 @@ public class ParseSTL extends JPanel {
 
         if (z == 0)
             return;
+
+        if (y > Y_MAX)
+            Y_MAX = y;
+        if (y < Y_MIN)
+            Y_MIN = y;
+
         intersection_list.add(new Point3d(x, y, z));
     }
 
+    /**
+     * Slices the 2d cross section from Y_MIN to Y_MAX, incrementing by line width (0.6mm)
+     * This will give the point of intersection of the 2d cross section and the slice
+     */
+    public static void crossSectionIntersections(List<Point3d> list) {
+        double currentHeight = Y_MIN + 0.6; // nozzle = 0.6mm
+
+        while (currentHeight < Y_MAX - 0.6) {
+            for (int i = 0; i < list.size() - 1; i += 2) {
+                if ((list.get(i).getY() < currentHeight && list.get(i + 1).getY() > currentHeight) || (list.get(i).getY() > currentHeight && list.get(i + 1).getY() < currentHeight)) {
+                    pointOnALine(list.get(i), list.get(i + 1), currentHeight); // where on the line does it intersect
+                }
+            }
+            currentHeight += 0.6;
+        }
+    }
+
+    /**
+     * Given a line (Point A, Point B), find where the intersection point is given
+     * a certain height. Simply uses the slope to calculate X given height (Y)
+     */
+    public static void pointOnALine(Point3d A, Point3d B, double height) {
+        double x1, y1, x2, y2;
+        if (A.getY() > B.getY()) {
+            x1 = A.getX();
+            y1 = A.getY();
+            x2 = B.getX();
+            y2 = B.getY();
+        } else {
+            x1 = B.getX();
+            y1 = B.getY();
+            x2 = A.getX();
+            y2 = A.getY();
+        }
+
+        double slope = (x1 - x2) / (y1 - y2);
+        double x = (height - y2) * slope + x2;
+        intersections_cross.add(new Point3d(x, height, 0)); // doesn't use Z, maybe make a Point2d
+    }
 
     public void paintComponent(Graphics g) {
-
-        for (int i = 0; i < intersection_list.size(); i++) {
-
+        for (int i = 0; i < intersection_list.size() - 1; i += 2) {
+            g.drawLine((int) (intersection_list.get(i).getX() * 10), (int) (intersection_list.get(i).getY() * 10), (int) (intersection_list.get(i + 1).getX() * 10), (int) (intersection_list.get(i + 1).getY() * 10));
         }
 
-        for (Point3d p : intersection_list) {
-            g.drawLine((int)(p.getX() * 10) , (int)(p.getY() * 10) , (int)(p.getX() * 10) , (int)(p.getY() * 10) );
-        }
 
+        for (Point3d p : intersections_cross) {
+            g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 3, 3);
+        }
     }
 }
