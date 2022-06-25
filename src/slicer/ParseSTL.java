@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.List;
 
@@ -24,8 +25,6 @@ import java.util.List;
 
 
 public class ParseSTL extends JPanel {
-
-    //    static Map<Double, List<Point3d>> map = new HashMap<Double, List<Point3d>>();
     static Map<Double, Point3d> map = new HashMap<Double, Point3d>(); // currently not used
     static List<Point3d> intersection_list = new ArrayList<Point3d>();
     static List<Point3d> intersections_cross = new ArrayList<Point3d>(); // cross section intersection points
@@ -37,29 +36,33 @@ public class ParseSTL extends JPanel {
         List<Triangle> list = new ArrayList<Triangle>();
         //List<Point3d> intersection_list = new ArrayList<Point3d>();
         list = readSTL(list);
-
+        Point3d p1 = new Point3d(0, .6, 0);
+        Point3d p2 = new Point3d(10, .6, 0);
+        Point3d p3 = new Point3d(5, .6, 0);
         Collections.sort(list);
         findIntersections(list);
         crossSectionIntersections(intersection_list);
+        //sortPoints(intersections_cross);
 
         ParseSTL panel = new ParseSTL();
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Draw Points");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBackground(Color.white);
-        frame.setSize(1000, 1000);
+        frame.setSize(600, 600);
         frame.add(panel);
         frame.setVisible(true);
 
         System.out.println("Y_MIN = " + Y_MIN);
         System.out.println("Total lines: " + intersection_list.size() / 2);
         System.out.println("Y_MAX = " + Y_MAX);
+
 //        for (Point3d p : intersection_list) {
 //            System.out.println(p.getX() + ", " + p.getY());
 //        }
-//        for (Point3d p : intersection_list) {
-//            System.out.println("x: " + p.getX() + ", y: " + p.getY() + ", z: " + p.getZ());
-//        }
+        for (Point3d p : intersections_cross) {
+            System.out.println("x: " + p.getX() + ", y: " + p.getY());
+        }
 
 //        for (Triangle l : list) {
 //            System.out.println("(" + l.A.getX() + ", " + l.A.getY() + ", " + l.A.getZ() + ")" + ", (" + l.B.getX() + ", " + l.B.getY() + ", " + l.B.getZ() + ")" + ", (" + l.C.getX() + ", " + l.C.getY() + ", " + l.C.getZ() + ")");
@@ -68,7 +71,7 @@ public class ParseSTL extends JPanel {
 
     public static List<Triangle> readSTL(List<Triangle> faceList) {
         try {
-            Scanner scanner = new Scanner(new File("/Users/gustavoestermarker/IdeaProjects/Slicer/testSTL.stl"));
+            Scanner scanner = new Scanner(new File("/Users/gustavoestermarker/IdeaProjects/Slicer/Chisel.stl"));
             while (scanner.hasNextLine()) {
                 Point3d[] points = new Point3d[3];
                 if (scanner.nextLine().contains("outer")) { // 3 vertex lines follow "outer loop" line
@@ -130,8 +133,10 @@ public class ParseSTL extends JPanel {
         }
     }
 
-    // determine which two lines the plane intersects
-    // 3 possibilities: 1) AB and BC, 2) AB and AC, 3) AC and BC
+    /**
+     * determine which two lines the plane intersects
+     * 3 possibilities: 1) AB and BC, 2) AB and AC, 3) AC and BC
+     */
     public static void twoLines(Point3d A, Point3d B, Point3d C, double layerHeight) {
         if ((A.getZ() <= layerHeight && B.getZ() >= layerHeight) | (A.getZ() >= layerHeight && B.getZ() <= layerHeight)) {
             if ((B.getZ() <= layerHeight && C.getZ() >= layerHeight) | (B.getZ() >= layerHeight && C.getZ() <= layerHeight)) {
@@ -184,24 +189,23 @@ public class ParseSTL extends JPanel {
      * This will give the point of intersection of the 2d cross section and the slice
      */
     public static void crossSectionIntersections(List<Point3d> list) {
-        double currentHeight = Y_MIN + 0.6; // nozzle = 0.6mm
+        BigDecimal currentHeight = new BigDecimal(Y_MIN);
 
-        while (currentHeight < Y_MAX - 0.6) {
+        while (currentHeight.compareTo(new BigDecimal(Y_MAX)) < 0) {
             for (int i = 0; i < list.size() - 1; i += 2) {
-                if ((list.get(i).getY() < currentHeight && list.get(i + 1).getY() > currentHeight) || (list.get(i).getY() > currentHeight && list.get(i + 1).getY() < currentHeight)) {
+                if (currentHeight.compareTo(new BigDecimal(list.get(i).getY())) > 0 && currentHeight.compareTo(new BigDecimal(list.get(i + 1).getY())) < 0 ||
+                        currentHeight.compareTo(new BigDecimal(list.get(i).getY())) < 0 && currentHeight.compareTo(new BigDecimal(list.get(i + 1).getY())) > 0) {
                     pointOnALine(list.get(i), list.get(i + 1), currentHeight); // where on the line does it intersect
                 }
             }
-            currentHeight += 0.6;
+            currentHeight = currentHeight.add(new BigDecimal("0.6"));
         }
     }
 
-    /**
-     * Given a line (Point A, Point B), find where the intersection point is given
-     * a certain height. Simply uses the slope to calculate X given height (Y)
-     */
-    public static void pointOnALine(Point3d A, Point3d B, double height) {
+
+    public static void pointOnALine(Point3d A, Point3d B, BigDecimal height) {
         double x1, y1, x2, y2;
+        double height_d = height.doubleValue();
         if (A.getY() > B.getY()) {
             x1 = A.getX();
             y1 = A.getY();
@@ -215,15 +219,150 @@ public class ParseSTL extends JPanel {
         }
 
         double slope = (x1 - x2) / (y1 - y2);
-        double x = (height - y2) * slope + x2;
-        intersections_cross.add(new Point3d(x, height, 0)); // doesn't use Z, maybe make a Point2d
+        double x = (height_d - y2) * slope + x2;
+        intersections_cross.add(new Point3d(x, height_d, 0)); // doesn't use Z, maybe make a Point2d
     }
 
+
+    /**
+     * Given a line (Point A, Point B), find where the intersection point is given
+     * a certain height. Simply uses the slope to calculate X given height (Y)
+     */
+//    public static void pointOnALine(Point3d A, Point3d B, double height) {
+//        double x1, y1, x2, y2;
+//
+//        if (A.getY() > B.getY()) {
+//            x1 = A.getX();
+//            y1 = A.getY();
+//            x2 = B.getX();
+//            y2 = B.getY();
+//        } else {
+//            x1 = B.getX();
+//            y1 = B.getY();
+//            x2 = A.getX();
+//            y2 = A.getY();
+//        }
+//
+//        double slope = (x1 - x2) / (y1 - y2);
+//        double x = (height - y2) * slope + x2;
+//        intersections_cross.add(new Point3d(x, height, 0)); // doesn't use Z, maybe make a Point2d
+//    }
+
+    /**
+     * Takes in the cross section intersectin points. Right now they are sorted by Y_value,
+     * but the X_value is unsorted. This method sorts the X_value within the list
+     */
+    public static void sortPoints(List<Point3d> list) {
+        List<Point3d> temp = new ArrayList<Point3d>();
+        double Y_value = list.get(0).getY();
+        int index = 0;
+
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getY() == Y_value) {
+                temp.add(list.get(i));
+            } else {
+                for (Point3d p : temp) {
+                    System.out.println("x: " + p.getX() + ", y: " + p.getY());
+                }
+                Y_value += 0.6;
+
+                if (temp.size() > 2) {
+                    sortAndReplace(list, temp, index);
+                }
+
+                temp.clear();
+                System.out.println();
+                index = i;
+            }
+        }
+//        for (int i = 0; i < list.size(); i++) {
+//            System.out.println("Y_value: " + Y_value);
+//            if (list.get(i).getY() == Y_value) {
+//                temp.add(list.get(i));
+//            } else if (temp.size() <= 2) { // if only two elements, swap order if necessary
+//                System.out.println("temp size");
+//                if (temp.size() == 2 && temp.get(0).getX() > temp.get(1).getX()) {
+//                    System.out.println("temp.size() <= 2");
+//                    intersections_cross.set(i, temp.get(1));
+//                    intersections_cross.set(i + 1, temp.get(0));
+//                    temp.clear();
+//                    index = i;
+//                    Y_value += 0.6;
+//                } else {
+//                    Y_value += 0.6;
+//                }
+//            } else {
+//                System.out.println("else");
+//                sortAndReplace(list, temp, index);
+//                temp.clear();
+//                index = i;
+//                Y_value += 0.6;
+//            }
+//        }
+    }
+
+
+    public static void sortAndReplace(List<Point3d> list, List<Point3d> temp_list, int index) {
+        //System.out.println("\nsize:" + temp_list.size());
+        //System.out.println("Before sort:");
+        for (Point3d p : temp_list) {
+            System.out.println("x: " + p.getX() + ", y: " + p.getY());
+        }
+        for (int j = 1; j < temp_list.size(); j++) {
+            //double current = temp_list.get(j).getX();
+            Point3d current = temp_list.get(j);
+            int i = j - 1;
+            while ((i > -1) && (temp_list.get(i).getX() > current.getX())) {
+                temp_list.set(i + i, temp_list.get(i));
+                i--;
+            }
+            temp_list.set(i + 1, current);
+        }
+        for (int i = 0; i < temp_list.size(); i++) {
+            intersections_cross.set(index + i, temp_list.get(i));
+        }
+
+        //System.out.println("After sort:");
+        for (Point3d p : temp_list) {
+            //  System.out.println("x: " + p.getX() + ", y: " + p.getY());
+        }
+    }
+
+    /**
+     * Sorts the temporary list and replaces the values in 'list'
+     * Uses insertion sort since the temp list is very small
+     * <p>
+     * //* @param index starting index in 'list'
+     */
+//    public static void sortAndReplace(List<Point3d> list, List<Point3d> temp_list, int index) {
+//        //System.out.println("\nsize:" + temp_list.size());
+//        //System.out.println"Before sort:");
+//        for (Point3d p : temp_list) {
+//            System.out.println("x: " + p.getX() + ", y: " + p.getY());
+//        }
+//        for (int j = 1; j < temp_list.size(); j++) {
+//            //double current = temp_list.get(j).getX();
+//            Point3d current = temp_list.get(j);
+//            int i = j - 1;
+//            while ((i > -1) && (temp_list.get(i).getX() > current.getX())) {
+//                temp_list.set(i + i, temp_list.get(i));
+//                i--;
+//            }
+//            temp_list.set(i + 1, current);
+//        }
+//        for (int i = 0; i < temp_list.size(); i++) {
+//            intersections_cross.set(index + i, temp_list.get(i));
+//        }
+//
+//        //System.out.println("After sort:");
+//        for (Point3d p : temp_list) {
+//            //  System.out.println("x: " + p.getX() + ", y: " + p.getY());
+//        }
+//    }
     public void paintComponent(Graphics g) {
         for (int i = 0; i < intersection_list.size() - 1; i += 2) {
             g.drawLine((int) (intersection_list.get(i).getX() * 10), (int) (intersection_list.get(i).getY() * 10), (int) (intersection_list.get(i + 1).getX() * 10), (int) (intersection_list.get(i + 1).getY() * 10));
         }
-
 
         for (Point3d p : intersections_cross) {
             g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 3, 3);
