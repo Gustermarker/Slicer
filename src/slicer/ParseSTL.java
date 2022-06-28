@@ -32,14 +32,13 @@ public class ParseSTL extends JPanel {
 
     public static void main(String[] args) {
         List<Triangle> list = new ArrayList<Triangle>();
-        list = readSTL(list); // parses STL and fills 'list'
+        readSTL(list);// parses STL and fills 'list'
         Collections.sort(list);
         sliceSTL(list);
         crossSectionIntersections(intersection_list);
         sortPoints(path_intersection_points);
 
         ParseSTL panel = new ParseSTL();
-        JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Draw Points");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBackground(Color.white);
@@ -176,19 +175,15 @@ public class ParseSTL extends JPanel {
      * This will give the point of intersection of the 2d cross section and the slice
      */
     public static void crossSectionIntersections(List<Point3d> list) {
-        //double currentHeight = Y_MIN + 0.6; // nozzle = 0.6mm
         BigDecimal currentHeight = new BigDecimal(Y_MIN);
 
-        //while (currentHeight < Y_MAX) {
         while (currentHeight.compareTo(new BigDecimal(Y_MAX)) < 0) {
             for (int i = 0; i < list.size() - 1; i += 2) {
-                //if ((list.get(i).getY() < currentHeight && list.get(i + 1).getY() > currentHeight) || (list.get(i).getY() > currentHeight && list.get(i + 1).getY() < currentHeight)) {
-                if (currentHeight.compareTo(new BigDecimal(list.get(i).getY())) > 0 && currentHeight.compareTo(new BigDecimal(list.get(i + 1).getY())) < 0 ||
-                        currentHeight.compareTo(new BigDecimal(list.get(i).getY())) < 0 && currentHeight.compareTo(new BigDecimal(list.get(i + 1).getY())) > 0) {
+                if (currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) > 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) < 0 ||
+                        currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) < 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) > 0) {
                     pathLineIntersection(list.get(i), list.get(i + 1), currentHeight); // where on the line does it intersect
                 }
             }
-            //currentHeight += 0.6;
             currentHeight = currentHeight.add(new BigDecimal("0.6"));
         }
     }
