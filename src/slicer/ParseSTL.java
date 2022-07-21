@@ -26,6 +26,7 @@ import java.util.List;
 public class ParseSTL extends JPanel {
     static List<Point3d> intersection_list = new ArrayList<Point3d>();
     static List<Point2d> path_intersection_points = new ArrayList<Point2d>();
+    static List<Point2d> path_list = new ArrayList<Point2d>();
 
     static double LAYER_HEIGHT = 0.2;
     static double Y_MIN = 100000, Y_MAX = -100000; // the max and min Y value for all intersection points
@@ -38,11 +39,14 @@ public class ParseSTL extends JPanel {
         crossSectionIntersections(intersection_list);
         sortPoints(path_intersection_points);
 
+        GeneratePath generate = new GeneratePath();
+        path_list = generate.GeneratePath(path_intersection_points);
+
         ParseSTL panel = new ParseSTL();
         JFrame frame = new JFrame("Draw Points");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBackground(Color.white);
-        frame.setSize(600, 600);
+        frame.setSize(1200, 1200);
         frame.add(panel);
         frame.setVisible(true);
 
@@ -54,6 +58,12 @@ public class ParseSTL extends JPanel {
         for (Point2d p : path_intersection_points) {
             System.out.println("index: " + i + ", x: " + p.getX() + ", y: " + p.getY());
             i++;
+        }
+
+        int j = 0;
+        for (Point2d p : path_list) {
+            System.out.println("index: " + j + ", x: " + p.getX() + ", y: " + p.getY());
+            j++;
         }
     }
 
@@ -255,6 +265,10 @@ public class ParseSTL extends JPanel {
 
         for (Point2d p : path_intersection_points) {
             g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 3, 3);
+        }
+
+        for (int i = 0; i < 74; i += 2) {
+            g.drawLine((int) (path_list.get(i).getX() * 10), (int) (path_list.get(i).getY() * 10), (int) (path_list.get(i + 1).getX() * 10), (int) (path_list.get(i + 1).getY() * 10));
         }
     }
 }
