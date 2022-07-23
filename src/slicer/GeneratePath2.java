@@ -7,7 +7,7 @@ import java.util.List;
  * This class generates that path that the nozzle will take each layer.
  */
 
-public class GeneratePath {
+public class GeneratePath2 {
 
     // list that contains the path that will turn into GCODE. represented by points
     List<Point2d> path_list = new ArrayList<Point2d>();
@@ -31,6 +31,7 @@ public class GeneratePath {
         int index;
 
         while (list.size() > 0) {
+            System.out.println("while");
             Y_curr = list.get(0).getY();
             X_left = list.get(0).getX();
             prev_X_left = list.get(0).getX();
@@ -62,52 +63,47 @@ public class GeneratePath {
                     if (list.get(j).getY() > Y_curr) {
                         index = j;
                         Y_curr = list.get(j).getY();
-                        System.out.println("Y_curr: " + Y_curr);
                         break;
                     }
                 }
 
-                //System.out.println("Y_curr: " + Y_curr);
+                System.out.println("Y_curr: " + Y_curr);
 
                 reset = true; // default true, will change if reset condition met
 
                 // this loops through all points at layer Y_curr
-                //for (int i = index; list.get(i).getY() == Y_curr || i < list.size() - 1; i += 2) {
-                for (int i = index; i < list.size() - 1; i += 2) {
-                    if (list.get(i).getY() > Y_curr) {
-                        break;
-                    }
+                for (int i = index; list.get(i).getY() == Y_curr; i += 2) {
 
                     // if this condition is never met, we will reset
                     //if (list.get(i).getX() < X_left && list.get(i + 1).getX() > X_left) {
 //                    if (list.get(i).getX() < X_left && list.get(i + 1).getX() > X_left) {
-                    //if (prev_X_left < X_left && prev_X_right > X_left) {
-                    if (list.get(i).getX() >= prev_X_left && list.get(i).getX() <= prev_X_right ||
-                        list.get(i).getX() <= prev_X_left && list.get(i).getX() <= prev_X_right) {
+                    if (prev_X_left < X_left && prev_X_right > X_left) {
                         if (right) {
                             path_list.add(list.get(i));
                             path_list.add(list.get(i + 1));
+                            //X_left = list.get(i).getX();
                             prev_X_left = list.get(i).getX();
                             prev_X_right = list.get(i + 1).getX();
                             right = false;
                         } else { // left
                             path_list.add(list.get(i + 1));
                             path_list.add(list.get(i));
+                            //X_left = list.get(i + 1).getX();
                             prev_X_left = list.get(i).getX();
                             prev_X_right = list.get(i + 1).getX();
                             right = true;
                         }
                         list.remove(i);
                         list.remove(i);
-                        index = i;
+                        System.out.println("reset = false");
                         reset = false;
                         break;
                     }
-                    if (i > list.size() - 1) {
+                    X_left = list.get(i).getX();
+                    if  (list.size() == 2)
                         break;
-                    }
-
                 }
+                System.out.println("do");
             } while (!reset);
 
         }

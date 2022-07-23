@@ -27,6 +27,7 @@ public class ParseSTL extends JPanel {
     static List<Point3d> intersection_list = new ArrayList<Point3d>();
     static List<Point2d> path_intersection_points = new ArrayList<Point2d>();
     static List<Point2d> path_list = new ArrayList<Point2d>();
+    static List<Point2d> temp = new ArrayList<Point2d>();
 
     static double LAYER_HEIGHT = 0.2;
     static double Y_MIN = 100000, Y_MAX = -100000; // the max and min Y value for all intersection points
@@ -39,8 +40,11 @@ public class ParseSTL extends JPanel {
         crossSectionIntersections(intersection_list);
         sortPoints(path_intersection_points);
 
+        temp = path_intersection_points;
         GeneratePath generate = new GeneratePath();
         path_list = generate.GeneratePath(path_intersection_points);
+        path_intersection_points = temp;
+
 
         ParseSTL panel = new ParseSTL();
         JFrame frame = new JFrame("Draw Points");
@@ -55,14 +59,14 @@ public class ParseSTL extends JPanel {
         System.out.println("Total lines: " + intersection_list.size() / 2);
 
         int i = 0;
-        for (Point2d p : path_intersection_points) {
+        for (Point2d p : temp) {
             System.out.println("index: " + i + ", x: " + p.getX() + ", y: " + p.getY());
             i++;
         }
 
         int j = 0;
         for (Point2d p : path_list) {
-            System.out.println("index: " + j + ", x: " + p.getX() + ", y: " + p.getY());
+            //System.out.println("index: " + j + ", x: " + p.getX() + ", y: " + p.getY());
             j++;
         }
     }
@@ -192,6 +196,9 @@ public class ParseSTL extends JPanel {
                 if (currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) > 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) < 0 ||
                         currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) < 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) > 0) {
                     pathLineIntersection(list.get(i), list.get(i + 1), currentHeight); // where on the line does it intersect
+                    if (list.get(i).getX() == list.get(i + 1).getX()) {
+                        System.out.println("equals");
+                    }
                 }
             }
             currentHeight = currentHeight.add(new BigDecimal("0.6"));
@@ -217,9 +224,14 @@ public class ParseSTL extends JPanel {
             y2 = A.getY();
         }
 
-        double slope = (x1 - x2) / (y1 - y2);
-        double x = (height_d - y2) * slope + x2;
-        path_intersection_points.add(new Point2d(x, height_d));
+        if (x1 == x2) {
+            path_intersection_points.add(new Point2d(x1, height_d));
+            System.out.println("urmom");
+        } else {
+            double slope = (x1 - x2) / (y1 - y2);
+            double x = (height_d - y2) * slope + x2;
+            path_intersection_points.add(new Point2d(x, height_d));
+        }
     }
 
     /**
@@ -260,14 +272,19 @@ public class ParseSTL extends JPanel {
 
     public void paintComponent(Graphics g) {
         for (int i = 0; i < intersection_list.size() - 1; i += 2) {
+            g.setColor(Color.black);
             g.drawLine((int) (intersection_list.get(i).getX() * 10), (int) (intersection_list.get(i).getY() * 10), (int) (intersection_list.get(i + 1).getX() * 10), (int) (intersection_list.get(i + 1).getY() * 10));
+//            g.setColor(Color.magenta);
+//            g.fillOval((int) (intersection_list.get(i).getX() * 10), (int) (intersection_list.get(i).getY() * 10), 6, 3);
+//            g.setColor(Color.green);
+//            g.fillOval((int) (intersection_list.get(i + 1).getX() * 10), (int) (intersection_list.get(i + 1).getY() * 10), 12, 3);
         }
 
         for (Point2d p : path_intersection_points) {
-            g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 3, 3);
+            //g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 4, 4);
         }
 
-        for (int i = 0; i < 74; i += 2) {
+        for (int i = 0; i < 280; i += 2) {
             g.drawLine((int) (path_list.get(i).getX() * 10), (int) (path_list.get(i).getY() * 10), (int) (path_list.get(i + 1).getX() * 10), (int) (path_list.get(i + 1).getY() * 10));
         }
     }
