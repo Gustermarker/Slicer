@@ -62,7 +62,7 @@ public class GeneratePath {
                     if (list.get(j).getY() > Y_curr) {
                         index = j;
                         Y_curr = list.get(j).getY();
-                        System.out.println("Y_curr: " + Y_curr);
+                        //System.out.println("Y_curr: " + Y_curr);
                         break;
                     }
                 }
