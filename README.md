@@ -25,8 +25,9 @@ Since the triangle mesh only describes the surface of the model, an STL is essen
 ### Toolpath algorithm:
 One we have completed the previous step, we must somehow use this perimeter to come up with a path that will cover every square inch of the 2D triangle. Since this triangle shape is only defined by 3 points, we do not have much information to go off of. The way most printers travel going horizontally back and forth, zigzagging downward. To do this, we must "slice" the 2D layers horizontally at set intervals (the width of the nozzle that extrudes plastic), and calculate where the horizontal lines intersect the perimter. Once we have these intersection points, to generate the toolpath we just need to draw straight, horizontal lines between these points. A simplified example shown below: 
 
+![Screen Shot 2022-09-09 at 11 10 23 PM](https://user-images.githubusercontent.com/43012097/189471630-20f028e5-2eec-4bef-8228-d0435e832c08.png)
 
-
-![Screen Shot 2022-09-09 at 11 02 11 PM (2)](https://user-images.githubusercontent.com/43012097/189471498-574ed84c-0dd6-41c8-9597-ebdfd2dd23e6.png)
+### Generating GCODE:
+To be continued...
 
 
