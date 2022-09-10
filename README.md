@@ -7,7 +7,7 @@ To do list:
 1) ~~Parse STL file into some usable data~~
 2) ~~Slice the model, creates *n* amount of 2D layers~~
 3) ~~Generate toolpath from 2D layers~~
-4) Convert the toolpath (currently in the form of 2d rays) into GCODE
+4) Convert the toolpath into GCODE
 5) Interactive GUI
 
 ## How it works:
