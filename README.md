@@ -17,7 +17,16 @@ First, we must understand what an STL file is. From Wikipedia:
 <img src="https://cdn2.sculpteo.com/blog/wp-content/uploads/2019/06/uT6do-min.jpg" width="400">
 
 ### How to slice:
-Since the triangle mesh only describes the surface of the model, an STL is essentially hollow. Knowing this, you can easily slice a triangle mesh to get the perimeter of the model. In a 2D coordinate system, if you take a triangle and draw a straight line through it, the line will always intersect two edges. The same holds true in 3D. If you take a triangle that is defined in 3D space, and you intersect it with a plane, the plane will intersect two edges (the only exception is when the triangle is parallel to the plane). Since all triangles are adjacent to eachother, if you find all triangle-plane intersection points and connect them with lines, you will have the perimieter. The drawing below demonstrates this:
+Since the triangle mesh only describes the surface of the model, an STL is essentially hollow. Knowing this, you can easily slice a triangle mesh to get the perimeter of the model. In a 2D coordinate system, if you take a triangle and draw a straight line through it, the line will always intersect two edges. The same holds true in 3D. If you take a triangle that is defined in 3D space, and you intersect it with a plane, the plane will intersect two edges (the only exception is when the triangle is parallel to the plane). Since all triangles are adjacent to eachother, if you find all triangle-plane intersection points and connect them with lines, you will have the perimieter. The drawing below demonstrates this. The dotted lines on the left represent the horizontal plane intersecting the model. 
 
+
+![Screen Shot 2022-09-09 at 10 37 26 PM](https://user-images.githubusercontent.com/43012097/189470809-6c93e771-a211-4c05-a1e0-c58d714b467c.png)
+
+### Toolpath algorithm:
+One we have completed the previous step, we must somehow use this perimeter to come up with a path that will cover every square inch of the 2D triangle. Since this triangle shape is only defined by 3 points, we do not have much information to go off of. The way most printers travel going horizontally back and forth, zigzagging downward. To do this, we must "slice" the 2D layers horizontally at set intervals (the width of the nozzle that extrudes plastic), and calculate where the horizontal lines intersect the perimter. Once we have these intersection points, to generate the toolpath we just need to draw straight, horizontal lines between these points. A simplified example shown below: 
+
+
+
+![Screen Shot 2022-09-09 at 11 02 11 PM (2)](https://user-images.githubusercontent.com/43012097/189471498-574ed84c-0dd6-41c8-9597-ebdfd2dd23e6.png)
 
 
