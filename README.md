@@ -6,6 +6,12 @@ What is a slicer? A slicer takes in a 3D model (STL file), "slices" it into a bu
 To do list:
 1) ~~Parse STL file into some usable data~~
 2) ~~Slice the model, creates *n* amount of 2D layers~~
-3) ~~Generate toolpath~~
+3) ~~Generate toolpath from 2D layers~~
 4) Convert the toolpath (currently in the form of 2d rays) into GCODE
 5) Interactive GUI
+
+## How it works:
+First, we must understand what an STL file is. From Wikipedia: 
+> An STL file describes a raw, unstructured triangulated surface by the unit normal and vertices (ordered by the right-hand rule) of the triangles using a three-dimensional Cartesian coordinate system.
+
+<img src="https://cdn2.sculpteo.com/blog/wp-content/uploads/2019/06/uT6do-min.jpg" width="400">
