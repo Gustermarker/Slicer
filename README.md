@@ -15,3 +15,9 @@ First, we must understand what an STL file is. From Wikipedia:
 > An STL file describes a raw, unstructured triangulated surface by the unit normal and vertices (ordered by the right-hand rule) of the triangles using a three-dimensional Cartesian coordinate system.
 
 <img src="https://cdn2.sculpteo.com/blog/wp-content/uploads/2019/06/uT6do-min.jpg" width="400">
+
+### How to slice:
+Since the triangle mesh only describes the surface of the model, an STL is essentially hollow. Knowing this, you can easily slice a triangle mesh to get the perimeter of the model. In a 2D coordinate system, if you take a triangle and draw a straight line through it, the line will always intersect two edges. The same holds true in 3D. If you take a triangle that is defined in 3D space, and you intersect it with a plane, the plane will intersect two edges (the only exception is when the triangle is parallel to the plane). Since all triangles are adjacent to eachother, if you find all triangle-plane intersection points and connect them with lines, you will have the perimieter. The drawing below demonstrates this:
+
+
+
