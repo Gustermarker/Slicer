@@ -24,10 +24,11 @@ import java.util.List;
  */
 
 public class ParseSTL extends JPanel {
-    static List<Point3d> intersection_list = new ArrayList<Point3d>();
-    static List<Point2d> path_intersection_points = new ArrayList<Point2d>();
+    static List<Point3d> perimeter_list = new ArrayList<Point3d>();
+    static List<Point2d> perimeter_intersection_points = new ArrayList<Point2d>();
     static List<Point2d> path_list = new ArrayList<Point2d>();
     static List<Point2d> temp = new ArrayList<Point2d>();
+    static List<Point2d> test_list = new ArrayList<Point2d>();
 
     static double LAYER_HEIGHT = 0.2;
     static double Y_MIN = 100000, Y_MAX = -100000; // the max and min Y value for all intersection points
@@ -37,19 +38,21 @@ public class ParseSTL extends JPanel {
         readSTL(list);// parses STL and fills 'list'
         Collections.sort(list);
         sliceSTL(list);
-        crossSectionIntersections(intersection_list);
-        System.out.println("final size: " + path_intersection_points.size());
-        sortPoints(path_intersection_points);
-        System.out.println("final size 2: " + path_intersection_points.size());
+        crossSectionIntersections(perimeter_list);
+        sortPoints(perimeter_intersection_points);
 
+        int j = 0;
+        for (Point2d p : perimeter_intersection_points) {
+            //System.out.println("index: " + j + ", x: " + p.getX() + ", y: " + p.getY());
+            j++;
+        }
 
-        System.out.println("size:"  + intersection_list.size());
-        temp = path_intersection_points;
+        temp.addAll(perimeter_intersection_points);
         GeneratePath generate = new GeneratePath();
-        path_list = generate.GeneratePath(path_intersection_points);
-        //path_list = generate.GeneratePath(path_intersection_points, intersection_list);
-        path_intersection_points = temp;
+        path_list = generate.GeneratePerims(perimeter_list);
 
+        System.out.println("perimeter list size: " + perimeter_list.size());
+        System.out.println("ordered perimeter size: " + path_list.size());
 
         ParseSTL panel = new ParseSTL();
         JFrame frame = new JFrame("Draw Points");
@@ -58,22 +61,6 @@ public class ParseSTL extends JPanel {
         frame.setSize(1200, 1200);
         frame.add(panel);
         frame.setVisible(true);
-
-        System.out.println("Y_MIN = " + Y_MIN);
-        System.out.println("Y_MAX = " + Y_MAX);
-        System.out.println("Total lines: " + intersection_list.size() / 2);
-
-        int i = 0;
-        for (Point2d p : temp) {
-            System.out.println("index: " + i + ", x: " + p.getX() + ", y: " + p.getY());
-            i++;
-        }
-
-        int j = 0;
-        for (Point2d p : path_list) {
-            //System.out.println("index: " + j + ", x: " + p.getX() + ", y: " + p.getY());
-            j++;
-        }
     }
 
     /**
@@ -122,10 +109,12 @@ public class ParseSTL extends JPanel {
                 if (list.get(i).Z_min > current_Z_height) {
                     startIndex = i;
                     break;
-                }
-                if (list.get(i).Z_max > current_Z_height) {
+                } else {
                     whichTwoLines(list.get(i).A, list.get(i).B, list.get(i).C, current_Z_height);
                 }
+//                if (list.get(i).Z_max > current_Z_height) {
+//                    whichTwoLines(list.get(i).A, list.get(i).B, list.get(i).C, current_Z_height);
+//                }
             }
             //current_Z_height += LAYER_HEIGHT;
             if (current_Z_height > 100) {
@@ -140,8 +129,8 @@ public class ParseSTL extends JPanel {
      * 3 possibilities: 1) AB and BC, 2) AB and AC, 3) AC and BC
      */
     public static void whichTwoLines(Point3d A, Point3d B, Point3d C, double layerHeight) {
-        if ((A.getZ() <= layerHeight && B.getZ() >= layerHeight) | (A.getZ() >= layerHeight && B.getZ() <= layerHeight)) {
-            if ((B.getZ() <= layerHeight && C.getZ() >= layerHeight) | (B.getZ() >= layerHeight && C.getZ() <= layerHeight)) {
+        if ((A.getZ() <= layerHeight && B.getZ() >= layerHeight) || (A.getZ() >= layerHeight && B.getZ() <= layerHeight)) {
+            if ((B.getZ() <= layerHeight && C.getZ() >= layerHeight) || (B.getZ() >= layerHeight && C.getZ() <= layerHeight)) {
                 linePlaneIntersection(A, B, layerHeight);
                 linePlaneIntersection(B, C, layerHeight);
             } else {
@@ -159,6 +148,8 @@ public class ParseSTL extends JPanel {
      * adds this point to a list
      */
     public static void linePlaneIntersection(Point3d A, Point3d B, double d) {
+//        System.out.println("A.getX(): " + A.getX() + ", A.getY(): " + A.getY());
+//        System.out.println("B.getX(): " + B.getX() + ", B.getY(): " + B.getY());
         double px = A.getX(), py = A.getY(), pz = A.getZ();
         double qx = B.getX(), qy = B.getY(), qz = B.getZ();
         double tDenom = (qz - pz);
@@ -166,8 +157,8 @@ public class ParseSTL extends JPanel {
 
         if (tDenom == 0) { // both points have same Z value
             if (qz == layerHeight) { // line is inside of the plane
-                intersection_list.add(new Point3d(A.getX(), A.getY(), A.getZ()));
-                intersection_list.add(new Point3d(B.getX(), B.getY(), B.getZ()));
+                perimeter_list.add(new Point3d(A.getX(), A.getY(), A.getZ()));
+                perimeter_list.add(new Point3d(B.getX(), B.getY(), B.getZ()));
             }
             return;
         }
@@ -186,27 +177,22 @@ public class ParseSTL extends JPanel {
         if (y < Y_MIN)
             Y_MIN = y;
 
-        intersection_list.add(new Point3d(x, y, z));
+        //System.out.println("x: " + x + ", y: " + y + ", z: " + z);
+        perimeter_list.add(new Point3d(x, y, z));
     }
 
     /**
      * Slices the 2d cross section from Y_MIN to Y_MAX, incrementing by line width (0.6mm)
      * This will give the point of intersection of the 2d cross section and the slice
      */
-    public static void crossSectionIntersections(List<Point3d> list) {
+    public static void crossSectionIntersections(List<Point3d> perimeter_list) {
         BigDecimal currentHeight = new BigDecimal(Y_MIN);
 
         while (currentHeight.compareTo(new BigDecimal(Y_MAX)) < 0) {
-            for (int i = 0; i < list.size() - 1; i += 2) {
-                if (currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) > 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) < 0 ||
-                        currentHeight.compareTo(BigDecimal.valueOf(list.get(i).getY())) < 0 && currentHeight.compareTo(BigDecimal.valueOf(list.get(i + 1).getY())) > 0) {
-                    pathLineIntersection(list.get(i), list.get(i + 1), currentHeight); // where on the line does it intersect
-                    if (list.get(i).getX() == list.get(i + 1).getX()) {
-                        System.out.println("equals");
-                    }
-                    if (currentHeight.compareTo(new BigDecimal(36)) == 0) {
-                        System.out.println("36");
-                    }
+            for (int i = 0; i < perimeter_list.size() - 1; i += 2) {
+                if (currentHeight.compareTo(BigDecimal.valueOf(perimeter_list.get(i).getY())) > 0 && currentHeight.compareTo(BigDecimal.valueOf(perimeter_list.get(i + 1).getY())) < 0 ||
+                        currentHeight.compareTo(BigDecimal.valueOf(perimeter_list.get(i).getY())) < 0 && currentHeight.compareTo(BigDecimal.valueOf(perimeter_list.get(i + 1).getY())) > 0) {
+                    pathLineIntersection(perimeter_list.get(i), perimeter_list.get(i + 1), currentHeight); // where on the line does it intersect
                 }
             }
             currentHeight = currentHeight.add(new BigDecimal("0.6"));
@@ -252,8 +238,8 @@ public class ParseSTL extends JPanel {
 //
         double slope = (x1 - x2) / (y1 - y2);
         double x = (height_d - y2) * slope + x2;
-        path_intersection_points.add(new Point2d(x, height_d));
-       // System.out.println("size path intersection: " + path_intersection_points.size());
+        perimeter_intersection_points.add(new Point2d(x, height_d));
+        // System.out.println("size path intersection: " + path_intersection_points.size());
 
 //        if (height.compareTo(new BigDecimal(35)) > 0 && height.compareTo(new BigDecimal(36)) < 0) {
 //            System.out.println("x: " + x);
@@ -295,42 +281,13 @@ public class ParseSTL extends JPanel {
     public static void sortAndReplace(List<Point2d> list, int index) {
         Collections.sort(list);
         for (int i = 0; i < list.size(); i++) {
-            path_intersection_points.set(index + i, list.get(i));
+            perimeter_intersection_points.set(index + i, list.get(i));
         }
     }
 
     public void paintComponent(Graphics g) {
-        for (int i = 0; i < intersection_list.size() - 1; i += 2) {
-            g.setColor(Color.black);
-             g.drawLine((int) (intersection_list.get(i).getX() * 10), (int) (intersection_list.get(i).getY() * 10), (int) (intersection_list.get(i + 1).getX() * 10), (int) (intersection_list.get(i + 1).getY() * 10));
-            // g.drawLine((int) (intersection_list.get(i).getX() * 5 + 2), (int) (intersection_list.get(i).getY() * 5), (int) (intersection_list.get(i + 1).getX() * 5), (int) (intersection_list.get(i + 1).getY() * 5));
-
+        for (int i = 0; i < 1220; i += 2) {
+            g.drawLine((int) (path_list.get(i).getX() * 8 + 450), (int) (path_list.get(i).getY() * 8 + 50), (int) (path_list.get(i + 1).getX() * 8 + 450), (int) (path_list.get(i + 1).getY() * 8 + 50));
         }
-
-        for (Point2d p : path_intersection_points) {
-            g.drawOval((int) (p.getX() * 10), (int) (p.getY() * 10), 4, 4);
-        }
-
-        for (int i = 0; i < 264; i += 2) {
-            g.drawLine((int) (path_list.get(i).getX() * 5), (int) (path_list.get(i).getY() * 5), (int) (path_list.get(i + 1).getX() * 5), (int) (path_list.get(i + 1).getY() * 5));
-            g.drawLine((int) (path_list.get(i + 1).getX() * 5), (int) (path_list.get(i + 1).getY() * 5), (int) (path_list.get(i + 2).getX() * 5), (int) (path_list.get(i + 2).getY() * 5));
-        }
-        for (int i = 0; i < 310; i += 2) {
-            g.drawLine((int) (path_list.get(i).getX() * 5 + 500), (int) (path_list.get(i).getY() * 5), (int) (path_list.get(i + 1).getX() * 5 + 500), (int) (path_list.get(i + 1).getY() * 5));
-            if (i != 264) {
-                g.drawLine((int) (path_list.get(i + 1).getX() * 5 + 500), (int) (path_list.get(i + 1).getY() * 5), (int) (path_list.get(i + 2).getX() * 5 + 500), (int) (path_list.get(i + 2).getY() * 5));
-            }
-        }
-        for (int i = 0; i < 434; i += 2) {
-            g.drawLine((int) (path_list.get(i).getX() * 5), (int) (path_list.get(i).getY() * 5 + 500), (int) (path_list.get(i + 1).getX() * 5), (int) (path_list.get(i + 1).getY() * 5 + 500));
-            g.drawLine((int) (path_list.get(i + 1).getX() * 5), (int) (path_list.get(i + 1).getY() * 5 + 500), (int) (path_list.get(i + 2).getX() * 5), (int) (path_list.get(i + 2).getY() * 5 + 500));
-        }
-        for (int i = 0; i < 484; i += 2) {
-            g.drawLine((int) (path_list.get(i).getX() * 5 + 500), (int) (path_list.get(i).getY() * 5 + 500), (int) (path_list.get(i + 1).getX() * 5 + 500), (int) (path_list.get(i + 1).getY() * 5 + 500));
-            if (i + 3 < 484) {
-                g.drawLine((int) (path_list.get(i + 1).getX() * 5 + 500), (int) (path_list.get(i + 1).getY() * 5 + 500), (int) (path_list.get(i + 2).getX() * 5 + 500), (int) (path_list.get(i + 2).getY() * 5 + 500));
-            }
-        }
-
     }
 }
