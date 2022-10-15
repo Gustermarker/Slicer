@@ -2,7 +2,7 @@ package slicer;
 
 public class Point3d {
 
-    final double x, y, z;
+    double x, y, z;
 
     public Point3d(double x, double y, double z) {
         this.x = x;
@@ -20,5 +20,17 @@ public class Point3d {
 
     public double getZ() {
         return z;
+    }
+
+    public void addX(double x) {
+        this.x += x;
+    }
+
+    public void addY(double y) {
+        this.y += y;
+    }
+
+    public void addZ(double z) {
+        this.z += z;
     }
 }
